@@ -3,15 +3,14 @@ from priority_based_search import *
 
 
 def test_priority_based_search():
-    # Create a MatrixGraph
     graph = MatrixGraph(dimensions=(3, 3, 3))
 
     """
-  Simple Crossing scenario a->x, b->y
-    x
-  b + y
-    a
-  """
+    Simple Crossing scenario a->x, b->y
+      x
+    b + y
+      a
+    """
     agent_starts = [
         (1, 0, 0),  # a
         (0, 1, 0),  # b
@@ -30,8 +29,8 @@ def test_priority_based_search():
     assert trajectories is not None
 
     """
-  Should have one agent wait for the other at its initial location before entering intersection point
-  """
+    Should have one agent wait for the other at its initial location before entering intersection point
+    """
     if trajectories:
         for idx, trajectory in enumerate(trajectories):
             print(f"Agent {idx} trajectory:")

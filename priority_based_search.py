@@ -182,7 +182,7 @@ class PriorityBasedSearch:
         # Apply constraints to the safe intervals
         for constraint in constraints:
             coord, time_start, time_end = constraint
-            safe_interval_table.add_constraint(coord, time_start, time_end)
+            safe_interval_table.add_node_constraint(coord, time_start, time_end)
 
         # Plan the path using SafeIntervalPlanner
         planner = SafeIntervalPlanner(self.graph, safe_interval_table)

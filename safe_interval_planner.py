@@ -1,6 +1,10 @@
+from __future__ import annotations
 from typing import Tuple, List, Dict, Optional
 import heapq
-from matrix_graph import MatrixGraph
+from time_intervals import *
+from graph import Graph
+from safe_interval_table import SafeIntervalTable
+from trajectory import Trajectory
 
 # Define movement velocities (meters per second)
 BOT_VXY = 1.0  # Velocity in x or y direction
@@ -8,151 +12,15 @@ BOT_VZUP = 0.3  # Velocity moving upwards in z
 BOT_VZDOWN = 0.6  # Velocity moving downwards in z
 
 
-class TimeInterval:
-    def __init__(self, start: float, end: float) -> None:
-        self.start = start
-        self.end = end
-
-    def overlaps(self, other: "TimeInterval") -> bool:
-        return not (self.end < other.start or self.start > other.end)
-
-    def __repr__(self):
-        return f"[{self.start}, {self.end}]"
-
-
-class SafeIntervalTable:
-    def __init__(self, graph: "MatrixGraph") -> None:
-        """
-        Initializes the Safe Interval Table for the given graph.
-
-        Parameters:
-        - graph: The MatrixGraph representing the warehouse environment.
-        """
-        self.graph = graph
-        # For each node, maintain a list of safe intervals
-        self.safe_intervals: Dict[Tuple[int, int, int], List[TimeInterval]] = {}
-        self.initialize_safe_intervals()
-
-    def initialize_safe_intervals(self) -> None:
-        """
-        Initializes the safe intervals for all nodes in the graph.
-        By default, all nodes are safe from time 0 to infinity unless otherwise specified.
-        """
-        for x in range(self.graph.nx):
-            for y in range(self.graph.ny):
-                for z in range(self.graph.nz):
-                    coord = (x, y, z)
-                    if coord not in self.graph.disabled_cells:
-                        # Initially, all cells are safe from time 0 to infinity
-                        self.safe_intervals[coord] = [TimeInterval(0.0, float("inf"))]
-
-    def get_safe_intervals(
-        self, coordinate: Tuple[int, int, int]
-    ) -> List[TimeInterval]:
-        """
-        Retrieves the list of safe intervals for a given coordinate.
-
-        Parameters:
-        - coordinate: The coordinate tuple (x, y, z).
-
-        Returns:
-        - A list of SafeInterval objects for the given coordinate.
-        """
-        return self.safe_intervals.get(coordinate, [])
-
-    def set_safe_intervals(
-        self, coordinate: Tuple[int, int, int], intervals: List[TimeInterval]
-    ) -> None:
-        """
-        Sets the safe intervals for a given coordinate.
-
-        Parameters:
-        - coordinate: The coordinate of the cell.
-        - intervals: A list of SafeInterval objects to set for this coordinate.
-        """
-        self.safe_intervals[coordinate] = intervals
-
-    def add_constraint(
-        self, coordinate: Tuple[int, int, int], start_time: float, end_time: float
-    ) -> None:
-        """
-        Adds a constraint to the safe interval table, updating the safe intervals.
-
-        Parameters:
-        - coordinate: The coordinate of the constraint.
-        - start_time: The time when the constraint starts.
-        - end_time: The time when the constraint ends.
-        """
-        intervals = self.safe_intervals.get(
-            coordinate, [TimeInterval(0.0, float("inf"))]
-        )
-        new_intervals = []
-        for interval in intervals:
-            if interval.end <= start_time or interval.start >= end_time:
-                # No overlap
-                new_intervals.append(interval)
-            else:
-                # Overlap exists, split intervals if necessary
-                if interval.start < start_time:
-                    new_intervals.append(TimeInterval(interval.start, start_time))
-                if interval.end > end_time:
-                    new_intervals.append(TimeInterval(end_time, interval.end))
-        self.safe_intervals[coordinate] = new_intervals
-
-
-class Trajectory:
-    def __init__(
-        self,
-        segments: List[Tuple[Tuple[int, int, int], Tuple[int, int, int], float, float]],
-    ) -> None:
-        """
-        Initializes the Trajectory with a list of segments.
-
-        Each segment is a tuple:
-        - start_coord: Tuple[int, int, int]
-        - end_coord: Tuple[int, int, int]
-        - start_time: float
-        - end_time: float
-        """
-        self.segments = segments
-
-    def __iter__(self):
-        """
-        Iterates over the segments in the trajectory.
-        """
-        return iter(self.segments)
-
-    def iter_time_range(self, start_time: float, end_time: float):
-        """
-        Generator that yields segments overlapping with the given time interval.
-
-        Parameters:
-        - start_time: The start of the time interval.
-        - end_time: The end of the time interval.
-        """
-        for segment in self.segments:
-            seg_start_time = segment[2]
-            seg_end_time = segment[3]
-            # Check for overlap
-            if seg_end_time > start_time and seg_start_time < end_time:
-                yield segment
-
-    def __repr__(self):
-        rep = [
-            f"{s[0]} to {s[1]} during [{s[2]:.2f}, {s[3]:.2f}] " for s in self.segments
-        ]
-        return "\n".join(rep)
-
-
 class SafeIntervalPlanner:
     class State:
         def __init__(
             self,
-            coord: Tuple[int, int, int],
+            coord: Graph.Node,
             time: float,
             interval: TimeInterval,
             g: float,
-            parent: Optional["SafeIntervalPlanner.State"] = None,
+            parent: Optional[SafeIntervalPlanner.State] = None,
         ) -> None:
             self.coord = coord
             self.time = time
@@ -160,35 +28,31 @@ class SafeIntervalPlanner:
             self.g = g  # Cost to come (total time to reach this state)
             self.parent = parent
 
-        def __lt__(self, other: "SafeIntervalPlanner.State") -> bool:
+        def __lt__(self, other: SafeIntervalPlanner.State) -> bool:
             # Comparison operator for priority queue (min-heap)
             return self.g < other.g
 
         def __repr__(self):
             return f"State(coord={self.coord}, time={self.time}, interval={self.interval}, g={self.g})"
 
-    def __init__(
-        self, graph: "MatrixGraph", safe_interval_table: SafeIntervalTable
-    ) -> None:
+    def __init__(self, graph: Graph, safe_interval_table: SafeIntervalTable) -> None:
         """
         Initializes the Safe Interval Planner.
 
         Parameters:
-        - graph: The MatrixGraph representing the warehouse environment.
+        - graph: The Graph representing the warehouse environment.
         - safe_interval_table: The SafeIntervalTable containing safe intervals for each node.
         """
         self.graph = graph
         self.safe_interval_table = safe_interval_table
 
-    def plan(
-        self, start: Tuple[int, int, int], goal: Tuple[int, int, int]
-    ) -> Optional["Trajectory"]:
+    def plan(self, start: Graph.Node, goal: Graph.Node) -> Optional[Trajectory]:
         """
         Plans a path from start to goal using Safe Interval Path Planning.
 
         Parameters:
-        - start: The starting coordinate.
-        - goal: The goal coordinate.
+        - start: The starting node.
+        - goal: The goal node.
 
         Returns:
         - A Trajectory object representing the path with timing information,
@@ -197,7 +61,7 @@ class SafeIntervalPlanner:
         open_list = []
         closed_list = {}
 
-        start_intervals = self.safe_interval_table.get_safe_intervals(start)
+        start_intervals = self.safe_interval_table.get_node_intervals(start)
         if not start_intervals:
             return None  # No safe intervals at the start position
 
@@ -239,14 +103,14 @@ class SafeIntervalPlanner:
         return None  # No path found
 
     def generate_successors(
-        self, current_state: "SafeIntervalPlanner.State", goal: Tuple[int, int, int]
-    ) -> List["SafeIntervalPlanner.State"]:
+        self, current_state: SafeIntervalPlanner.State, goal: Graph.Node
+    ) -> List[SafeIntervalPlanner.State]:
         """
         Generates successor states from the current state.
 
         Parameters:
         - current_state: The current state from which to generate successors.
-        - goal: The goal coordinate.
+        - goal: The goal node.
 
         Returns:
         - A list of successor State instances.
@@ -256,7 +120,7 @@ class SafeIntervalPlanner:
         # Generate successors by moving to neighboring nodes
         for neighbor in self.graph.get_neighbors(current_state.coord):
             move_duration = self.move_time(current_state.coord, neighbor)
-            neighbor_intervals = self.safe_interval_table.get_safe_intervals(neighbor)
+            neighbor_intervals = self.safe_interval_table.get_node_intervals(neighbor)
 
             for neighbor_interval in neighbor_intervals:
                 # Earliest time we can arrive at the neighbor
@@ -295,7 +159,7 @@ class SafeIntervalPlanner:
         min_wait_time = None
         for neighbor in self.graph.get_neighbors(current_state.coord):
             move_duration = self.move_time(current_state.coord, neighbor)
-            neighbor_intervals = self.safe_interval_table.get_safe_intervals(neighbor)
+            neighbor_intervals = self.safe_interval_table.get_node_intervals(neighbor)
             for neighbor_interval in neighbor_intervals:
                 earliest_departure = neighbor_interval.start - move_duration
                 if earliest_departure > current_state.time:
@@ -324,7 +188,7 @@ class SafeIntervalPlanner:
             successors.append(wait_state)
         else:
             # Move to the next safe interval at current location
-            current_intervals = self.safe_interval_table.get_safe_intervals(
+            current_intervals = self.safe_interval_table.get_node_intervals(
                 current_state.coord
             )
             for interval in current_intervals:
@@ -342,34 +206,32 @@ class SafeIntervalPlanner:
         return successors
 
     def can_wait_at(
-        self, coord: Tuple[int, int, int], start_time: float, end_time: float
+        self, coord: Graph.Node, start_time: float, end_time: float
     ) -> bool:
         """
-        Checks if the agent can wait at the current coordinate from start_time to end_time.
+        Checks if the agent can wait at the current node from start_time to end_time.
 
         Parameters:
-        - coord: The coordinate where the agent wants to wait.
+        - coord: The node where the agent wants to wait.
         - start_time: The start time of the waiting period.
         - end_time: The end time of the waiting period.
 
         Returns:
         - True if the agent can wait during this time, False otherwise.
         """
-        intervals = self.safe_interval_table.get_safe_intervals(coord)
+        intervals = self.safe_interval_table.get_node_intervals(coord)
         for interval in intervals:
             if interval.start <= start_time and interval.end >= end_time:
                 return True
         return False
 
-    def heuristic(
-        self, coord1: Tuple[int, int, int], coord2: Tuple[int, int, int]
-    ) -> float:
+    def heuristic(self, coord1: Graph.Node, coord2: Graph.Node) -> float:
         """
         Heuristic function for A* search.
 
         Parameters:
-        - coord1: The first coordinate.
-        - coord2: The second coordinate.
+        - coord1: The first node.
+        - coord2: The second node.
 
         Returns:
         - The estimated minimal time between coord1 and coord2.
@@ -395,15 +257,13 @@ class SafeIntervalPlanner:
 
         return time_xy + time_z
 
-    def move_time(
-        self, coord1: Tuple[int, int, int], coord2: Tuple[int, int, int]
-    ) -> float:
+    def move_time(self, coord1: Graph.Node, coord2: Graph.Node) -> float:
         """
         Computes the time to move from coord1 to coord2.
 
         Parameters:
-        - coord1: The starting coordinate.
-        - coord2: The destination coordinate.
+        - coord1: The starting node.
+        - coord2: The destination node.
 
         Returns:
         - The movement time.
@@ -438,7 +298,7 @@ class SafeIntervalPlanner:
 
         return time
 
-    def construct_trajectory(self, state: "SafeIntervalPlanner.State") -> "Trajectory":
+    def construct_trajectory(self, state: SafeIntervalPlanner.State) -> Trajectory:
         """
         Constructs the trajectory from the goal state back to the start.
 

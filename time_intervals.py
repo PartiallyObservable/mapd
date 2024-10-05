@@ -7,7 +7,7 @@ class TimeInterval:
         self.end = end
 
     def __repr__(self):
-        return f"[{self.start}, {self.end}]"
+        return f"[{self.start:.3f}, {self.end:.3f}]"
 
     def overlaps_with(self, other):
         return self.start < other.end and other.start < self.end

@@ -81,8 +81,8 @@ class PrioritizedPlanner:
 
             # Add constraints for the start and end coordinates
             # Since movement is instantaneous in discrete time steps, we can block both positions
-            safe_interval_table.add_constraint(start_coord, start_time, end_time)
-            safe_interval_table.add_constraint(end_coord, start_time, end_time)
+            safe_interval_table.add_node_constraint(start_coord, start_time, end_time)
+            safe_interval_table.add_node_constraint(end_coord, start_time, end_time)
 
             # Additionally, to prevent edge conflicts, we can block the edge between the coordinates
             # This is optional and depends on how strictly you want to prevent conflicts
