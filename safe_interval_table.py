@@ -64,7 +64,7 @@ class SafeIntervalTable:
         """
         # Lazy initialize with default interval 0->inf
         if node not in self.node_intervals:
-            self.node_intervals = TimeIntervalSet([TimeInterval(0, np.inf)])
+            self.node_intervals[node] = TimeIntervalSet([TimeInterval(0, np.inf)])
 
         # Apply constraint
         self.node_intervals[node].remove_interval(interval)

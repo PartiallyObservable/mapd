@@ -1,17 +1,32 @@
 from time_intervals import *
+from graph import Graph
 
 
+# Motion represents the transition between two states on a graph over a time interval
+# It can correspond to a graph-edge if the nodes are different,
+#   or waiting at a graph node if nodes are the same
 class Motion:
-    def __init__(self, start_state, end_state, time_interval: TimeInterval):
+    def __init__(
+        self,
+        start_state: Graph.Node,
+        end_state: Graph.Node,
+        time_interval: TimeInterval,
+    ):
         self.start_state = start_state
         self.end_state = end_state
         self.time_interval = time_interval
+
+    def is_transition(self) -> bool:
+        return self.start_state != self.end_state
+
+    def is_waiting(self) -> bool:
+        return self.start_state == self.end_state
 
     def __repr__(self):
         return f"({self.start_state} -> {self.end_state}), {self.time_interval})"
 
 
-# Class: Trajectory
+# Trajectory is a sequence of contiguous motions
 class Trajectory:
     def __init__(self):
         self.motions = []
