@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mapd"
+version = "0.1.0"
+description = "Automated warehousing robotics project"
+authors = [
+    { name = "Mark Debord", email = "mjay.debord@gmail.com" }
+]
+license = { text = "MIT" }  # Add your license type
+readme = "README.md"  # Make sure to include a README.md file
+requires-python = ">=3.8"
+
+# List your main dependencies here
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "vispy"
+]
+
+# Optional dependencies for testing or other features
+[project.optional-dependencies]
+testing = [
+    "pytest",
+    "pytest-cov"
+]
+
+[tool.setuptools.packages.find]
+# Specify where to find packages in subfolders
+where = ["common", "mapd", "mapf", "pathfinding"]
+
+# Optional: metadata for version control (e.g., if using GitHub)
+[project.urls]
+homepage = "https://github.com/PartiallyObservable/mapd"
+repository = "https://github.com/PartiallyObservable/mapd"
