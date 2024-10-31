@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Tuple, Set, Optional, List, Generator
-from graph import Graph
+from common.graph import Graph
 
 
 """

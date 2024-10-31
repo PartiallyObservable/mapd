@@ -1,13 +1,14 @@
-from safe_interval_planner import *
+from pathfinding.safe_interval_planner import *
+from common.graph import *
 
 
 class PrioritizedPlanner:
-    def __init__(self, graph: MatrixGraph) -> None:
+    def __init__(self, graph: Graph) -> None:
         """
         Initializes the PrioritizedPlanning planner.
 
         Parameters:
-        - graph: The MatrixGraph representing the environment.
+        - graph: The Graph representing the environment.
         """
         self.graph = graph
 

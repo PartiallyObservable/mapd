@@ -1,5 +1,5 @@
 import pytest
-from time_intervals import *
+from common.time_intervals import *
 
 
 def test_add_interval():

@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Tuple, List, Dict, Optional
 import heapq
-from time_intervals import *
-from graph import Graph
+from common.time_intervals import *
+from common.graph import Graph
 from safe_interval_table import SafeIntervalTable
-from trajectory import *
+from common.trajectory import *
 
 # Define movement velocities (meters per second)
 BOT_VXY = 1.0  # Velocity in x or y direction

@@ -1,6 +1,6 @@
 import heapq
 from typing import Tuple, List, Dict, Optional
-from safe_interval_planner import *
+from pathfinding.safe_interval_planner import *
 
 
 class PTNode:

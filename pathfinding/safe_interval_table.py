@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict
-from time_intervals import *
-from graph import *
+from common.time_intervals import *
+from common.graph import *
 import numpy as np
 
 """

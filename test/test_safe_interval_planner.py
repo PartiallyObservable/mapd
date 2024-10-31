@@ -1,6 +1,6 @@
 import pytest
-from matrix_graph import MatrixGraph
-from safe_interval_planner import *
+from common.matrix_graph import MatrixGraph
+from pathfinding.safe_interval_planner import *
 
 
 def test_safe_interval_planner():

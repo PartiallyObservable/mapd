@@ -1,10 +1,6 @@
 import pytest
 import numpy as np
-from assignment_algorithms import (
-    greedy_assignment_solver,
-    linear_sum_assignment_solver,
-    bottleneck_assignment_solver,
-)
+from mapd.assignment_algorithms import *
 
 
 # Fixture to create cost matrix, get_cost function, and print_assignments function
