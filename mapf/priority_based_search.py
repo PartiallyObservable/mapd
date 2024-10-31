@@ -30,7 +30,7 @@ class PTNode:
 
 
 class PriorityBasedSearch:
-    def __init__(self, graph: MatrixGraph) -> None:
+    def __init__(self, graph: Graph) -> None:
         """
         Initializes the Priority-Based Search planner.
 

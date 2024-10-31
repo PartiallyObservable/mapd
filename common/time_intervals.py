@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterator
 
 
 class TimeInterval:
@@ -77,6 +77,9 @@ class TimeIntervalSet:
             if current.contains(interval):
                 return True
         return False
+    
+    def __iter__(self) -> Iterator[TimeInterval]:
+        return iter(self.intervals)
 
     def __eq__(self, other):
         if not isinstance(other, TimeIntervalSet):

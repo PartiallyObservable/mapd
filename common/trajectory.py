@@ -1,5 +1,6 @@
-from time_intervals import *
-from graph import Graph
+from typing import Iterator, Generator
+from common.time_intervals import *
+from common.graph import Graph
 
 
 # Motion represents the transition between two states on a graph over a time interval
@@ -44,11 +45,10 @@ class Trajectory:
             else:
                 raise ValueError("Motion is not contiguous with the current trajectory")
 
-    def __iter__(self):
-        for motion in self.motions:
-            yield motion
+    def __iter__(self) -> Iterator[Motion]:
+        return iter(self.motions)
 
-    def iter_time_interval(self, time_interval: TimeInterval):
+    def iter_time_interval(self, time_interval: TimeInterval) -> Generator[Motion, None, None]:
         for motion in self.motions:
             if motion.time_interval.overlaps_with(time_interval):
                 yield motion

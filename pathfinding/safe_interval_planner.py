@@ -3,7 +3,7 @@ from typing import Tuple, List, Dict, Optional
 import heapq
 from common.time_intervals import *
 from common.graph import Graph
-from safe_interval_table import SafeIntervalTable
+from pathfinding.safe_interval_table import SafeIntervalTable
 from common.trajectory import *
 
 # Define movement velocities (meters per second)
@@ -27,15 +27,25 @@ class SafeIntervalPlanner:
             g: float,
             parent: Optional[SafeIntervalPlanner.SippNode] = None,
         ) -> None:
-            self.state = motion
+            self.motion = motion
             self.g = g  # Cost to get here (total time to reach this state)
+
+        # Alias for time interval
+        @property
+        def interval(self):
+            return self.motion.time_interval
+        
+        # Current time at end of motion
+        @property
+        def time(self):
+            return self.motion.time_interval.end
 
         def __lt__(self, other: SafeIntervalPlanner.SippNode) -> bool:
             # Comparison operator for priority queue (min-heap)
             return self.g < other.g
 
         def __repr__(self):
-            return f"(motion={self.motoin}, g={self.g})"
+            return f"(motion={self.motion}, g={self.g})"
 
     def __init__(self, graph: Graph, safe_interval_table: SafeIntervalTable) -> None:
         """
@@ -141,7 +151,7 @@ class SafeIntervalPlanner:
                 earliest_departure = max(earliest_departure, current_node.time)
                 if (
                     earliest_departure < current_node.interval.start
-                    or earliest_departure > current_node.interval.end
+                    or earliest_departure > current_node.time
                 ):
                     continue  # Cannot depart during current interval
 
@@ -176,20 +186,18 @@ class SafeIntervalPlanner:
         if min_wait_time is not None and min_wait_time > current_node.time:
             # Generate a wait state until min_wait_time
             wait_state = self.SippNode(
-                coord=current_node.motion.end_state,
-                time=min_wait_time,
-                interval=current_node.interval,
+                motion=Motion(current_node.motion.end_state, current_node.motion.end_state, time_interval=TimeInterval(current_node.time, current_node.time + min_wait_time)),
                 g=min_wait_time,
                 parent=current_node,
             )
             successors.append(wait_state)
-        elif current_node.time < current_node.interval.end:
+        elif current_node.time < current_node.time:
             # Wait until the end of the current interval
             wait_state = self.SippNode(
                 coord=current_node.motion.end_state,
-                time=current_node.interval.end,
+                time=current_node.time,
                 interval=current_node.interval,
-                g=current_node.interval.end,
+                g=current_node.time,
                 parent=current_node,
             )
             successors.append(wait_state)
